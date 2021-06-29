@@ -51,7 +51,7 @@ def proto_parser():
     parser.add_argument('--seed', default=1234, type=int)
 
     parser.add_argument('-t', '--train_way', default=20, type=int)
-    parser.add_argument('-n', '--way', default=5, type=int)
+    parser.add_argument('-n', '--way', default=4, type=int)
     parser.add_argument('-k', '--shot', default=5, type=int)
     parser.add_argument('-q', '--query', default=4, type=int)
     parser.add_argument('--noise', default=0.0, type=float)

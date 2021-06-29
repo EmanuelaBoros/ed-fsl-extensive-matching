@@ -296,12 +296,22 @@ def load_ace_dataset(options):
     counter.update([x['label'] for x in rest])
     accepted_target_classes = [k for k, v in counter.items() if v > 20]
     
+    print('Accepted target classes with more than 20 examples:', accepted_target_classes)
+    
     print(counter)
 
     for t in accepted_target_classes:
         samples = [x for x in rest if x['label'] == t]
         valid += samples[:len(samples) // 2]
         test += samples[len(samples) // 2:]
+
+#----------------------
+    for examples in [('valid', valid), ('test', test)]:
+        per_counter = collections.Counter()
+        per_counter.update([x['label'] for x in examples[1]])
+        per_accepted_target_classes = [k for k, v in per_counter.items() if v > 20]
+        print('Accepted target classes with more than 20 examples for:', examples[0], per_accepted_target_classes)
+#----------------------
 
     # For other
     l = len(other) // 3
