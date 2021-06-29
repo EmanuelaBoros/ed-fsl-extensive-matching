@@ -149,7 +149,7 @@ def sliding_window(seq, n=5):
     return slices
 
 
-def load_ace_dataset(options, path):
+def load_ace_dataset(options):
     #    import utils
     test_type = options.test_type
     import embeddings as emb
@@ -175,13 +175,21 @@ def load_ace_dataset(options, path):
 #        word_data = merge(matrix_data, word_data)
 
 #    print(word_data['nw/timex2norm/AFP_ENG_20030327.0022-29'].keys())
-
-    with open(path, 'r') as f:
-        sentences = f.read().split('\n\n')
-
+    import os
+    sentences = []
+    for path in [('train', os.path.join(options.data_path, 'train.tsv')), 
+                 ('dev', os.path.join(options.data_path, 'dev.tsv')), 
+                 ('test', os.path.join(options.data_path, 'test.tsv'))]:
+        print('Reading', path[0])
+        with open(path[1], 'r') as f:
+            set_sentences = f.read().split('\n\n')
+            print('---', len(set_sentences), 'sentences')
+            sentences +=  set_sentences#TODO: they say in the paper that they concat all data
+            
+            
     word_dim = 300
     word_embeds = np.random.uniform(-np.sqrt(0.06),
-                                    np.sqrt(0.06), (100000, word_dim))
+                                    np.sqrt(0.06), (100000, word_dim)) #TODO: for now, just random embeddings
 
     def get_event_type(label):
         if len(label) == 1:
@@ -207,7 +215,6 @@ def load_ace_dataset(options, path):
         positions = [x.split('\t')[-1].strip().split(',')[0][1:]
                      for x in sentence.split('\n') if len(x.split('\t')) > 1]
 
-#        print(labels)
         for i in range(half_window):
             words.append("<PAD>")
             words.insert(0, "<PAD>")
@@ -293,7 +300,6 @@ def load_ace_dataset(options, path):
     train = [x for x in data if not check_test_type(test_type, x['label'])]
     rest = [x for x in data if check_test_type(test_type, x['label'])]
 
-#    import pdb;pdb.set_trace()
     valid = []
     test = []
 
