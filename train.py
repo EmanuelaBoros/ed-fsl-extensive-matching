@@ -8,6 +8,7 @@ import random
 from torch.utils.data import DataLoader
 import datetime
 import torch
+import os
 
 if __name__ == '__main__':
 
@@ -46,7 +47,7 @@ if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     args.device = device
     train_rev, valid_rev, test_rev, train_other, valid_other, test_other, vectors = load_ace_dataset(
-        args)
+        args, os.path.join(args.data_path, 'train.tsv'))
     # else:
     #     train_rev, valid_rev, test_rev, train_other, valid_other, test_other = load_tac_dataset(args)
 

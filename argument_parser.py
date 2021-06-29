@@ -41,7 +41,8 @@ def proto_parser():
     parser.add_argument('--encoder', default='cnn', choices=encoder_choices)
     parser.add_argument('-b', '--batch_size', default=4, type=int)
     parser.add_argument('--optimizer', default='sgd', type=str, choices=['adam', 'sgd', 'adadelta'])
-    parser.add_argument('--lr', default=0.005, type=float)
+    parser.add_argument('--data_path', type=str)
+    parser.add_argument('--lr', default=0.003, type=float)
     parser.add_argument('--lr_step_size', default=500, type=int)
     parser.add_argument('--gpu', default='0')
     # Few-shot settings
@@ -57,8 +58,8 @@ def proto_parser():
 
     # Embedding
     #
-    parser.add_argument('--test_type', default='Be-Born,Marry,Injury,Divorce,Die,Transport,Start-Position,End-Position,Nominate,Elect,Transfer-Ownership,Transfer-Money', type=str_list)
-#    parser.add_argument('--test_type', default='Life,Movement,Personnel,Transaction', type=str_list)
+#    parser.add_argument('--test_type', default='Be-Born,Marry,Injury,Divorce,Die,Transport,Start-Position,End-Position,Nominate,Elect,Transfer-Ownership,Transfer-Money', type=str_list)
+    parser.add_argument('--test_type', default='Life,Movement,Personnel,Transaction', type=str_list)
     parser.add_argument('--embedding', default='glove', type=str_list)
     parser.add_argument('--tune_embedding', default=False, action='store_true')
     parser.add_argument('--debug', default=False, action='store_true')
