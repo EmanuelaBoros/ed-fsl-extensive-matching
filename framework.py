@@ -285,7 +285,7 @@ class FewShotREFramework:
             if it % 50 == 0:
                 print('@ {} | {:.5f} {:.5f} {:.5f} {:.5f}'.format(it, ce, loloss, intra, inter))
 
-            if it % val_step == 0 and it > 0:
+#            if it % val_step == 0 and it > 0:
                 self.model.eval()
                 valid_acc = self.eval(self.val_data_loader, val_iter)
                 test_acc = self.eval(self.test_data_loader, test_iter)

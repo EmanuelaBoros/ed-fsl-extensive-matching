@@ -61,11 +61,22 @@ def load_mapping_vector_tokenizer(embedding):
     return mapping, vectors, tokenizer
 
 
+
+def read_ace_data(path):
+    import os
+    for path in [('train', os.path.join(path, 'dev.tsv')), ('dev', os.path.join(path, 'dev.tsv')), 
+                 ('test', os.path.join(path, 'test.tsv'))]:
+        print('Reading', path[0])
+        with open(path[1], 'r') as f:
+            sentences = f.read().split('\n\n')
+
+    return data, label2idx
+
 def load_ace_dataset(options):
-    import utils
+#    import utils
     test_type = options.test_type
 
-    data, label2idx = utils.read_ace_data(utils.ACE)
+    data, label2idx = read_ace_data(options.data_path)
     train = data['train']
     valid = data['dev']
     test = data['test']
