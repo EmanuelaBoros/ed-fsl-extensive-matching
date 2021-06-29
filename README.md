@@ -1,5 +1,5 @@
 
-```python train.py --data_path DATA_PATH --train_way 4```
+```python train.py --data_path /home/eboros/projects/ace2005_preprocessing/output/ --train_way 4 --shot 4```
 
 DATA_PATH needs 3 files: train.tsv, test.tsv, dev.tsv
 
