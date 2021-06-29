@@ -1,3 +1,8 @@
+
+```python train.py --data_path DATA_PATH --train_way 4```
+
+DATA_PATH needs 3 files: train.tsv, test.tsv, dev.tsv
+
 # Extensively matching
 
 Extensively Matching for Few-shot Learning Event Detection
