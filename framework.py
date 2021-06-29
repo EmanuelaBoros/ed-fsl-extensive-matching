@@ -319,7 +319,7 @@ class FewShotREFramework:
         iter_right = 0.0
         iter_sample = 0.0
         for it in range(eval_iter):
-            print(it)
+#            print(it)
             support, query, negative, label = next(dataloader)
             self.model(support, query, negative)
             right = self.model.fscore(self.model.pred, label)
