@@ -177,7 +177,8 @@ def load_ace_dataset(options):
 #    print(word_data['nw/timex2norm/AFP_ENG_20030327.0022-29'].keys())
     import os
     sentences = []
-    for path in [('train', os.path.join(options.data_path, 'train.tsv')), 
+    for path in [
+                 ('train', os.path.join(options.data_path, 'train.tsv')), 
                  ('dev', os.path.join(options.data_path, 'dev.tsv')), 
                  ('test', os.path.join(options.data_path, 'test.tsv'))]:
         print('Reading', path[0])
@@ -191,7 +192,7 @@ def load_ace_dataset(options):
     word_embeds = np.random.uniform(-np.sqrt(0.06),
                                     np.sqrt(0.06), (100000, word_dim)) #TODO: for now, just random embeddings
 
-    def get_event_type(label):
+    def get_event_type(label): # transform the event subtypes labels into event types
         if len(label) == 1:
             return label
         for key in TYPES.keys():
@@ -256,29 +257,9 @@ def load_ace_dataset(options):
             if count < 5:
                 print(entry)
             count += 1
-#            import pdb;pdb.set_trace()
-
-#                if len(label)> 1:
-#                    print(label, position)
-#                for feature in [
-#                    'indices',
-#                    'dist',
-#                    'length',
-#                    'mask',
-#                        'anchor_index']:
-            #                if word in embeddings_model:
-            #                    entry['indices'] = embeddings_model[word]
-            #                    all_words.append(word)
-            #                elif word.lower() in embeddings_model:
-            #                    entry['indices'] = embeddings_model[word.lower()]
-            #                    all_words.append(word.lower())
-            #                else:
-            #                    unknown_words += 1
 
     dico, word_to_id, id_to_word = word_mapping(all_words)
-    print('Uknown words: ' + str((unknown_words * 100.0) / len(word_to_id)) + '%')
-
-#    import pdb;pdb.set_trace()
+    print('Unknown words: ' + str((unknown_words * 100.0) / len(word_to_id)) + '%')
 
 #    data = [x for idx, x in word_data.items() if x['label'] != 'O']
 #    other = [x for idx, x in word_data.items() if x['label'] == 'O']
@@ -314,6 +295,8 @@ def load_ace_dataset(options):
     counter = collections.Counter()
     counter.update([x['label'] for x in rest])
     accepted_target_classes = [k for k, v in counter.items() if v > 20]
+    
+    print(counter)
 
     for t in accepted_target_classes:
         samples = [x for x in rest if x['label'] == t]
@@ -396,7 +379,7 @@ class Fewshot(object):
         self.Q = Q
         self.O = O
         self.event2indices = {
-            'other': [
+            'O': [
                 x for x in range(
                     self.negative_length)]}
         self.positive_class = {x['label'] for x in positive_data}
@@ -406,6 +389,7 @@ class Fewshot(object):
             self.event2indices[t] = indices
         print('Positive_data: ', len(positive_data))
         print('negative_data: ', len(negative_data))
+#        print(self.event2indices)
 
     def __len__(self):
         return 10000000
@@ -435,7 +419,7 @@ class Fewshot(object):
 
     def get_negative(self):
         O, K = self.O, self.K
-        scope = self.event2indices['other']
+        scope = self.event2indices['O']
         indices = random.sample(scope, O * K)
 
         data = []
@@ -449,8 +433,8 @@ class Fewshot(object):
 
     def __getitem__(self, idx):
         N, K, Q = self.N, self.K, self.Q
-        print('N samples:', self.N)
-        print(self.positive_class)
+#        print('N samples:', self.N, len(self.positive_class))
+
         target_classes = random.sample(self.positive_class, N)
         noise_classes = []
         for class_name in self.event2indices.keys():
