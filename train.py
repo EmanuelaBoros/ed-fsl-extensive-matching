@@ -1,13 +1,13 @@
-from argument_parser import *
-from dataloader_v1 import *
+from argument_parser import proto_parser
+from dataloader_v1 import load_ace_dataset, fewshot_negative_fn, GCN_FEATURES, DEFAULT_FEATURES, Fewshot
 from framework import FewShotREFramework
-from models.proto import *
-from models.matching import *
-from models.relation_network import *
+from models.proto import ProtoHATT, Proto
+from models.matching import Matching
+from models.relation_network import RelationNetwork
 import random
 from torch.utils.data import DataLoader
 import datetime
-import utils
+import torch
 
 if __name__ == '__main__':
 
@@ -26,7 +26,8 @@ if __name__ == '__main__':
     Q = args.query  # default = 5
 
     current_time = str(datetime.datetime.now().time())
-    args.log_dir = 'logs/{}-{}-way-{}-shot-{}'.format(args.model, args.way, args.shot, current_time)
+    args.log_dir = 'logs/{}-{}-way-{}-shot-{}'.format(
+        args.model, args.way, args.shot, current_time)
 
     if args.noise > 0.0:
         print('Noise level: ', args.noise)
@@ -44,7 +45,8 @@ if __name__ == '__main__':
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     args.device = device
-    train_rev, valid_rev, test_rev, train_other, valid_other, test_other = load_ace_dataset(args)
+    train_rev, valid_rev, test_rev, train_other, valid_other, test_other, vectors = load_ace_dataset(
+        args)
     # else:
     #     train_rev, valid_rev, test_rev, train_other, valid_other, test_other = load_tac_dataset(args)
 
@@ -55,11 +57,36 @@ if __name__ == '__main__':
 
     print(feature_set)
 
-    train_dataset = Fewshot(train_rev, train_other, feature_set, TN, K, Q, O, noise=args.noise)
-    val_dataset = Fewshot(valid_rev, valid_other, feature_set, N, K, Q, O, noise=args.noise)
-    test_dataset = Fewshot(test_rev, test_other, feature_set, N, K, Q, O, noise=args.noise)
+    train_dataset = Fewshot(
+        train_rev,
+        train_other,
+        feature_set,
+        TN,
+        K,
+        Q,
+        O,
+        noise=args.noise)
+    val_dataset = Fewshot(
+        valid_rev,
+        valid_other,
+        feature_set,
+        N,
+        K,
+        Q,
+        O,
+        noise=args.noise)
+    test_dataset = Fewshot(
+        test_rev,
+        test_other,
+        feature_set,
+        N,
+        K,
+        Q,
+        O,
+        noise=args.noise)
 
-    args.vectors = utils.read_pickle('files/{}/W.proc'.format(args.dataset))
+    args.vectors = vectors #utils.read_pickle('files/{}/W.proc'.format(args.dataset))
+    
     train_data_loader = DataLoader(train_dataset,
                                    batch_size=B,
                                    num_workers=4,
@@ -91,6 +118,10 @@ if __name__ == '__main__':
                                    test_data_loader,
                                    args)
     if args.debug:
-        framework.train(train_iter=3050, val_step=200, val_iter=200, test_iter=200)
+        framework.train(
+            train_iter=3050,
+            val_step=200,
+            val_iter=200,
+            test_iter=200)
     else:
         framework.train(train_iter=5050, val_step=1000, test_iter=1000)
