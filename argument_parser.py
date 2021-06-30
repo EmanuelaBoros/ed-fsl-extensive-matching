@@ -60,7 +60,7 @@ def proto_parser():
     #
 #    parser.add_argument('--test_type', default='Be-Born,Marry,Injury,Divorce,Die,Transport,Start-Position,End-Position,Nominate,Elect,Transfer-Ownership,Transfer-Money', type=str_list)
     parser.add_argument('--test_type', default='Life,Movement,Personnel,Transaction', type=str_list)
-    parser.add_argument('--embedding', default='glove', type=str_list)
+    parser.add_argument('--embedding', default='random', type=str)
     parser.add_argument('--tune_embedding', default=False, action='store_true')
     parser.add_argument('--debug', default=False, action='store_true')
     parser.add_argument('--progress', default=False, action='store_true')
