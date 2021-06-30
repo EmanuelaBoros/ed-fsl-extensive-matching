@@ -220,6 +220,7 @@ def load_ace_dataset(options):
             word_data = pickle.load(f)
         with open('data/word_embeds_' + str(options.embedding) + '.pkl', 'rb') as f:
             word_embeds = pickle.load(f)
+#        import pdb;pdb.set_trace()
     else:
     #    
     
@@ -329,6 +330,7 @@ def load_ace_dataset(options):
 
         else:
             embeddings_model = load_embeddings(options.embedding)
+
             word_embeds = []
             for word, _ in word_to_id.items():
                 if word in embeddings_model:
@@ -379,6 +381,7 @@ def load_ace_dataset(options):
             for x in range(30 // (len(samples))):
                 train += samples
 
+# ----------------------
     counter = collections.Counter()
     counter.update([x['label'] for x in train])
     accepted_target_classes = [k for k, v in counter.items() if v > 20]
@@ -387,8 +390,8 @@ def load_ace_dataset(options):
         'Accepted target classes with more than 20 examples for train:',
         accepted_target_classes)
     print(counter, '\n')
-#    import pdb
-#    pdb.set_trace()
+# ----------------------
+
     # For dev and test
     counter = collections.Counter()
     counter.update([x['label'] for x in rest])
