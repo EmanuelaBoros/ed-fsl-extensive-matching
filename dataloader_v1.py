@@ -386,7 +386,7 @@ def load_ace_dataset(options):
     print(
         'Accepted target classes with more than 20 examples for train:',
         accepted_target_classes)
-    print(counter)
+    print(counter, '\n')
 #    import pdb
 #    pdb.set_trace()
     # For dev and test
@@ -398,7 +398,7 @@ def load_ace_dataset(options):
         'Accepted target classes with more than 20 examples for test and dev:',
         accepted_target_classes)
 
-    print(counter)
+    print(counter, '\n')
 
     for t in accepted_target_classes:
         samples = [x for x in rest if x['label'] == t]
@@ -413,7 +413,7 @@ def load_ace_dataset(options):
             k for k, v in per_counter.items() if v > 20]
         print('Accepted target classes with more than 20 examples for:',
               examples[0], per_accepted_target_classes)
-        print(per_counter)
+        print(per_counter, '\n')
 # ----------------------
 
     # For other
