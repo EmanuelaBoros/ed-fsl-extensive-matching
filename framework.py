@@ -169,6 +169,7 @@ class FewShotREModel(nn.Module):
 
         predictions = transfer(predictions, self.args.way)
         groundtruths = transfer(groundtruths, self.args.way)
+        
         zeros = np.zeros(predictions.shape, dtype='int')
         numPred = np.sum(np.not_equal(predictions, zeros))
         numKey = np.sum(np.not_equal(groundtruths, zeros))
@@ -177,10 +178,13 @@ class FewShotREModel(nn.Module):
         keys_eval = groundtruths[predictedIds]
         correct = np.sum(np.equal(preds_eval, keys_eval))
         # print('correct : {}, numPred : {}, numKey : {}'.format(correct, numPred, numKey))
+        
+#        import pdb;pdb.set_trace()
         precision = correct / numPred if numPred > 0 else 0.0
         recall = correct / numKey
         f1 = (2.0 * precision * recall) / (precision + recall) if (precision + recall) > 0. else 0.0
-        return f1
+        
+        return precision, recall, f1
 
 
 class FewShotREFramework:
@@ -287,8 +291,8 @@ class FewShotREFramework:
 
             if it % val_step == 0 and it > 0:
                 self.model.eval()
-                valid_acc = self.eval(self.val_data_loader, val_iter)
-                test_acc = self.eval(self.test_data_loader, test_iter)
+                valid_precision, valid_recall, valid_f1 = self.eval(self.val_data_loader, val_iter)
+                test_precision, test_recall, test_f1 = self.eval(self.test_data_loader, test_iter)
                 # self.writer.add_scalar('loss/ce', ce, it)
                 # self.writer.add_scalar('loss/lol', loloss, it)
                 # self.writer.add_scalar('loss/intra', intra, it)
@@ -296,12 +300,15 @@ class FewShotREFramework:
                 # self.writer.add_scalar('perf/valid', valid_acc, it)
                 # self.writer.add_scalar('perf/test', test_acc, it)
 
-                if valid_acc > best_val:
-                    best_val = valid_acc
-                    best_test = test_acc
-                    print('> Valid/Test:\t{:.4f}\t{:.4f} -> Best'.format(valid_acc, test_acc))
+                if valid_f1 > best_val:
+                    best_val = valid_f1
+                    best_test = test_f1
+#                    print('> Valid/Test F1:\t{:.4f}\t{:.4f} -> Best'.format(valid_f1, test_f1))
+                    print('Valid -- Precision : {:.4f}, Recall : {:.4f}, F1 : {:.4f} -> Best'.format(valid_precision, valid_recall, valid_f1))
+                    print('Test  -- Precision : {:.4f}, Recall : {:.4f}, F1 : {:.4f}'.format(test_precision, test_recall, test_f1))
                 else:
-                    print('> Valid/Test:\t{:.4f}\t{:.4f}'.format(valid_acc, test_acc))
+                    print('Valid -- Precision : {:.4f}, Recall : {:.4f}, F1 : {:.4f}'.format(valid_precision, valid_recall, valid_f1))
+                    print('Test  -- Precision : {:.4f}, Recall : {:.4f}, F1 : {:.4f}'.format(test_precision, test_recall, test_f1))
                 self.model.train()
 
         # self.writer.add_scalar('perf/best/valid', best_val)
@@ -314,15 +321,16 @@ class FewShotREFramework:
         :param eval_iter:
         :return: accuracy or f-score
         """
-        print('Evaluation')
         random.seed(3456)
-        iter_right = 0.0
+        iter_right_f1, iter_right_precision, iter_right_recall = 0.0, 0.0, 0.0
         iter_sample = 0.0
         for it in range(eval_iter):
 #            print(it)
             support, query, negative, label = next(dataloader)
             self.model(support, query, negative)
-            right = self.model.fscore(self.model.pred, label)
-            iter_right += right
+            right_precision, right_recall, right_f1 = self.model.fscore(self.model.pred, label)
+            iter_right_f1 += right_f1
+            iter_right_precision += right_precision
+            iter_right_recall += right_recall
             iter_sample += 1
-        return iter_right / iter_sample * 100.0
+        return iter_right_precision / iter_sample * 100.0, iter_right_recall / iter_sample * 100.0, iter_right_f1 / iter_sample * 100.0
