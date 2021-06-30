@@ -213,6 +213,7 @@ def load_ace_dataset(options):
 
     print('test_type', test_type)
 
+    label2index = get_labels()
     
     if os.path.exists('data/word_data_' + str(options.embedding) + '.pkl'):
         with open('data/word_data_' + str(options.embedding) + '.pkl', 'rb') as f:
@@ -224,7 +225,6 @@ def load_ace_dataset(options):
     
     #    word_data = utils.read_pickle('files/{}/word.proc'.format(options.dataset))
         # utils.read_pickle('files/{}/label2index.proc'.format(options.dataset))
-        label2index = get_labels()
     
     #    if options.encoder == 'gcn':
     #        matrix_data = utils.read_pickle('files/{}/matrix.proc'.format(options.dataset))
@@ -328,7 +328,7 @@ def load_ace_dataset(options):
                 pickle.dump(word_embeds, f)
 
         else:
-            embeddings_model = load_embeddings(options.embeddings)
+            embeddings_model = load_embeddings(options.embedding)
             word_embeds = []
             for word, _ in word_to_id.items():
                 if word in embeddings_model:
