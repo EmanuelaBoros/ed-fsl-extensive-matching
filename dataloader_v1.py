@@ -4,6 +4,9 @@ import random
 import numpy as np
 import torch
 from tqdm import tqdm
+import embeddings as emb
+import os
+import pickle
 
 def merge(d1, d2):
     for id, sample in d1.items():
@@ -11,18 +14,55 @@ def merge(d1, d2):
     return d1
 
 
+# def get_labels():
+#    return {
+#        'O': 0,
+#        'Business': 1,
+#        'Conflict': 2,
+#        'Contact': 3,
+#        'Life': 4,
+#        'Movement': 5,
+#        'Justice': 6,
+#        'Transaction': 7,
+#        'Personnel': 8
+#    }
+
 def get_labels():
     return {
         'O': 0,
-        'Business': 1,
-        'Conflict': 2,
-        'Contact': 3,
-        'Life': 4,
-        'Movement': 5,
-        'Justice': 6,
-        'Transaction': 7,
-        'Personnel': 8
-    }
+        'Execute': 1,
+        'Meet': 2,
+        'Sentence': 3,
+        'Appeal': 4,
+        'Transport': 5,
+        'End_Org': 6,
+        'Acquit': 7,
+        'Sue': 8,
+        'Attack': 9,
+        'Pardon': 10,
+        'Demonstrate': 11,
+        'Start_Position': 12,
+        'Die': 13,
+        'Injure': 14,
+        'Transfer_Ownership': 15,
+        'Marry': 16,
+        'Phone_Write': 17,
+        'Charge_Indict': 18,
+        'Declare_Bankruptcy': 19,
+        'Convict': 20,
+        'Elect': 21,
+        'Nominate': 22,
+        'Arrest_Jail': 23,
+        'Merge_Org': 24,
+        'Be_Born': 25,
+        'Transfer_Money': 26,
+        'Release_Parole': 27,
+        'Fine': 28,
+        'Trial_Hearing': 29,
+        'Divorce': 30,
+        'Extradite': 31,
+        'Start_Org': 32,
+        'End_Position': 33}
 
 
 TYPES = {
@@ -105,12 +145,11 @@ def create_dico(item_list):
     """
     assert isinstance(item_list, list)
     dico = {}
-    for items in item_list:
-        for item in items:
-            if item not in dico:
-                dico[item] = 1
-            else:
-                dico[item] += 1
+    for item in item_list:
+        if item not in dico:
+            dico[item] = 1
+        else:
+            dico[item] += 1
     return dico
 
 
@@ -124,7 +163,7 @@ def word_mapping(words):
     dico['<UNK>'] = 10000000
 
 #    dico = {k: v for k, v in dico.items() if v >= 3} #removed thresh
-
+    
     word_to_id, id_to_word = create_mapping(dico)
 
     print("Found %i unique words (%i in total)" % (
@@ -148,11 +187,20 @@ def sliding_window(seq, n=5):
 
     return slices
 
+def load_embeddings(type_embeddings='glove'):
+    if 'glove' in type_embeddings:
+        embeddings_model = emb.fetch_GloVe()
+    elif 'google' in type_embeddings:
+        embeddings_model = emb.fetch_SG_GoogleNews()
+    elif 'fast' in type_embeddings:
+        embeddings_model = emb.fetch_FastText()
+    elif 'number' in type_embeddings:
+        embeddings_model = emb.fetch_conceptnet_numberbatch()
+    return embeddings_model
 
 def load_ace_dataset(options):
     #    import utils
     test_type = options.test_type
-    import embeddings as emb
 
     half_window = int(options.max_length / 2)
     DISTANCE_MAPPING = {}
@@ -164,102 +212,142 @@ def load_ace_dataset(options):
         DISTANCE_MAPPING[dis] = len(DISTANCE_MAPPING)
 
     print('test_type', test_type)
-#    embeddings_model = emb.fetch_GloVe()
 
-#    word_data = utils.read_pickle('files/{}/word.proc'.format(options.dataset))
-    # utils.read_pickle('files/{}/label2index.proc'.format(options.dataset))
-    label2index = get_labels()
-
-#    if options.encoder == 'gcn':
-#        matrix_data = utils.read_pickle('files/{}/matrix.proc'.format(options.dataset))
-#        word_data = merge(matrix_data, word_data)
-
-#    print(word_data['nw/timex2norm/AFP_ENG_20030327.0022-29'].keys())
-    import os
-    sentences = []
-    for path in [
-                 ('train', os.path.join(options.data_path, 'train.tsv')), 
-                 ('dev', os.path.join(options.data_path, 'dev.tsv')), 
-                 ('test', os.path.join(options.data_path, 'test.tsv'))]:
-        print('Reading', path[0])
-        with open(path[1], 'r') as f:
-            set_sentences = f.read().split('\n\n')
-            print('---', len(set_sentences), 'sentences')
-            sentences +=  set_sentences#TODO: they say in the paper that they concat all data
+    
+    if os.path.exists('data/word_data_' + str(options.embedding) + '.pkl'):
+        with open('data/word_data_' + str(options.embedding) + '.pkl', 'rb') as f:
+            word_data = pickle.load(f)
+        with open('data/word_embeds_' + str(options.embedding) + '.pkl', 'rb') as f:
+            word_embeds = pickle.load(f)
+    else:
+    #    
+    
+    #    word_data = utils.read_pickle('files/{}/word.proc'.format(options.dataset))
+        # utils.read_pickle('files/{}/label2index.proc'.format(options.dataset))
+        label2index = get_labels()
+    
+    #    if options.encoder == 'gcn':
+    #        matrix_data = utils.read_pickle('files/{}/matrix.proc'.format(options.dataset))
+    #        word_data = merge(matrix_data, word_data)
+    
+    #    print(word_data['nw/timex2norm/AFP_ENG_20030327.0022-29'].keys())
+    
+        sentences = []
+        for path in [
+                ('train', os.path.join(options.data_path, 'train.tsv')),
+                ('dev', os.path.join(options.data_path, 'dev.tsv')),
+                ('test', os.path.join(options.data_path, 'test.tsv'))]:
+            print('Reading', path[0])
+            with open(path[1], 'r') as f:
+                set_sentences = f.read().split('\n\n')
+                print('---', len(set_sentences), 'sentences')
+                sentences += set_sentences  # TODO: they say in the paper that they concat all data
+    
+        word_dim = 300
+        # TODO: for now, just random embeddings
             
-            
-    word_dim = 300
-    word_embeds = np.random.uniform(-np.sqrt(0.06),
-                                    np.sqrt(0.06), (100000, word_dim)) #TODO: for now, just random embeddings
-
-    def get_event_type(label): # transform the event subtypes labels into event types
-        if len(label) == 1:
+        def get_event_type(label):  # transform the event subtypes labels into event types
+            if len(label) == 1:
+                return label
+            for key in TYPES.keys():
+                subtypes = TYPES[key]
+                for subtype in subtypes:
+                    if label[2:] in subtype.replace('-', '_'):
+                        return subtype
             return label
-        for key in TYPES.keys():
-            subtypes = TYPES[key]
-            for subtype in subtypes:
-                if label[2:] in subtype.replace('-', '_'):
-                    return key
-        return label
-
-    all_words = []
-    word_data = []
-    unknown_words = 0
-    count = 0
-    for sentence in tqdm(sentences, total=len(sentences)):
-        if 'DOCSTART' in sentence:
-            continue
-        words = [x.split('\t')[0].strip()
-                 for x in sentence.split('\n') if len(x.split('\t')) > 1]
-        labels = [get_event_type(x.split('\t')[1].strip())
-                  for x in sentence.split('\n') if len(x.split('\t')) > 1]
-        positions = [x.split('\t')[-1].strip().split(',')[0][1:]
+    
+        all_words = []
+        word_data = []
+        unknown_words = 0
+        count = 0
+        for sentence in tqdm(sentences, total=len(sentences)):
+            if 'DOCSTART' in sentence:
+                continue
+            words = [x.split('\t')[0].strip()
                      for x in sentence.split('\n') if len(x.split('\t')) > 1]
+            labels = [get_event_type(x.split('\t')[1].strip())
+                      for x in sentence.split('\n') if len(x.split('\t')) > 1]
+            positions = [x.split('\t')[-1].strip().split(',')[0][1:]
+                         for x in sentence.split('\n') if len(x.split('\t')) > 1]
+    
+            for i in range(half_window):
+                words.append("<PAD>")
+                words.insert(0, "<PAD>")
+                labels.append("<PAD>")
+                labels.insert(0, "<PAD>")
+                positions.append("<PAD>")
+                positions.insert(0, "<PAD>")
+    
+            for item in zip(sliding_window(words, options.max_length),
+                            sliding_window(labels, options.max_length),
+                            sliding_window(positions, options.max_length)):
+    
+                window_words, window_labels, window_positions = item
+    
+                entry = {}
+                entry['words'] = window_words
+                entry['label'] = window_labels[half_window]
+#                entry['indices'] = []
+                entry['anchor_index'] = half_window
+                entry['length'] = len(
+                    [x for x in window_words if '<PAD>' not in x])
+                entry['mask'] = [1 if x != '<PAD>' else 0 for x in window_words]
+                entry['dist'] = []
+    
+                distances = list(range(-half_window, half_window + 1))
+    
+                for word_position, item in enumerate(
+                        zip(window_words, window_labels, window_positions, distances)):
+                    word, label, position, distance = item
+                    if word not in all_words:
+                        all_words.append(word)
+                        
+#                    entry['indices'].append(all_words.index(word))
+    
+                    entry['dist'].append(DISTANCE_MAPPING[distance])
+    
+                word_data.append(entry)
+                
+                if count < 5:
+                    print(entry)
+                count += 1
 
-        for i in range(half_window):
-            words.append("<PAD>")
-            words.insert(0, "<PAD>")
-            labels.append("<PAD>")
-            labels.insert(0, "<PAD>")
-            positions.append("<PAD>")
-            positions.insert(0, "<PAD>")
+ 
+        dico, word_to_id, id_to_word = word_mapping(all_words)
+        print('Unknown words: ' + str((unknown_words * 100.0) / len(word_to_id)) + '%')
+
+        for idx, window in enumerate(word_data):
+            word_data[idx]['indices'] = [word_to_id[word] for word in entry['words']]
+            assert len(word_data[idx]['indices']) == len(word_data[idx]['dist'])
+
+        if 'random' in options.embedding:
+            word_embeds = np.random.uniform(-np.sqrt(0.06),
+                                            np.sqrt(0.06), (len(word_to_id), word_dim))
             
-        
-        for item in zip(sliding_window(words, options.max_length),
-                        sliding_window(labels, options.max_length),
-                        sliding_window(positions, options.max_length)):
+            with open('data/word_embeds_' + str(options.embedding) + '.pkl', 'wb') as f:
+                pickle.dump(word_embeds, f)
 
-            window_words, window_labels, window_positions = item
+        else:
+            embeddings_model = load_embeddings(options.embeddings)
+            word_embeds = []
+            for word, _ in word_to_id.items():
+                if word in embeddings_model:
+                    word_embeds.append(embeddings_model[word])
+                elif word.lower() in embeddings_model:
+                    word_embeds.append(embeddings_model[word.lower()])
+                else:
+                    try:
+                        size_embeddings = embeddings_model.shape[1]
+                    except:
+                        size_embeddings = embeddings_model.vector_size
+                    word_embeds.append(np.random.uniform(-np.sqrt(0.06), np.sqrt(0.06), size_embeddings))
+            
+            word_embeds = np.array(word_embeds)
+            with open('data/word_embeds_' + str(options.embedding) + '.pkl', 'wb') as f:
+                pickle.dump(word_embeds, f)
 
-            entry = {}
-            entry['words'] = window_words
-            entry['label'] = window_labels[half_window]
-            entry['indices'] = []
-            entry['anchor_index'] = half_window
-            entry['length'] = len(
-                [x for x in window_words if '<PAD>' not in x])
-            entry['mask'] = [1 if x != '<PAD>' else 0 for x in window_words]
-            entry['dist'] = []
-
-            distances = list(range(-half_window, half_window + 1))
-
-            for word_position, item in enumerate(
-                    zip(window_words, window_labels, window_positions, distances)):
-                word, label, position, distance = item
-                if word not in all_words:
-                    all_words.append(word)
-                entry['indices'].append(all_words.index(word))
-
-                entry['dist'].append(DISTANCE_MAPPING[distance])
-
-            word_data.append(entry)
-            assert len(entry['indices']) == len(entry['dist'])
-            if count < 5:
-                print(entry)
-            count += 1
-
-    dico, word_to_id, id_to_word = word_mapping(all_words)
-    print('Unknown words: ' + str((unknown_words * 100.0) / len(word_to_id)) + '%')
+        with open('data/word_data_' + str(options.embedding) + '.pkl', 'wb') as f:
+            pickle.dump(word_data, f)
 
 #    data = [x for idx, x in word_data.items() if x['label'] != 'O']
 #    other = [x for idx, x in word_data.items() if x['label'] == 'O']
@@ -274,7 +362,7 @@ def load_ace_dataset(options):
         #        import pdb;pdb.set_trace()
         for _type in test_types:
             _type = _type.replace('-', '_')
-            if _type in label:
+            if label in TYPES[_type]:
                 return True
         return False
 
@@ -291,13 +379,25 @@ def load_ace_dataset(options):
             for x in range(30 // (len(samples))):
                 train += samples
 
+    counter = collections.Counter()
+    counter.update([x['label'] for x in train])
+    accepted_target_classes = [k for k, v in counter.items() if v > 20]
+
+    print(
+        'Accepted target classes with more than 20 examples for train:',
+        accepted_target_classes)
+    print(counter)
+#    import pdb
+#    pdb.set_trace()
     # For dev and test
     counter = collections.Counter()
     counter.update([x['label'] for x in rest])
     accepted_target_classes = [k for k, v in counter.items() if v > 20]
-    
-    print('Accepted target classes with more than 20 examples:', accepted_target_classes)
-    
+
+    print(
+        'Accepted target classes with more than 20 examples for test and dev:',
+        accepted_target_classes)
+
     print(counter)
 
     for t in accepted_target_classes:
@@ -305,13 +405,16 @@ def load_ace_dataset(options):
         valid += samples[:len(samples) // 2]
         test += samples[len(samples) // 2:]
 
-#----------------------
+# ----------------------
     for examples in [('valid', valid), ('test', test)]:
         per_counter = collections.Counter()
         per_counter.update([x['label'] for x in examples[1]])
-        per_accepted_target_classes = [k for k, v in per_counter.items() if v > 20]
-        print('Accepted target classes with more than 20 examples for:', examples[0], per_accepted_target_classes)
-#----------------------
+        per_accepted_target_classes = [
+            k for k, v in per_counter.items() if v > 20]
+        print('Accepted target classes with more than 20 examples for:',
+              examples[0], per_accepted_target_classes)
+        print(per_counter)
+# ----------------------
 
     # For other
     l = len(other) // 3
@@ -443,7 +546,7 @@ class Fewshot(object):
 
     def __getitem__(self, idx):
         N, K, Q = self.N, self.K, self.Q
-#        print('N samples:', self.N, len(self.positive_class))
+#        print('N samples:', self.N, 'from', len(self.positive_class))
 
         target_classes = random.sample(self.positive_class, N)
         noise_classes = []
