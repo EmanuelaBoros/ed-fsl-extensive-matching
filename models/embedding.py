@@ -17,7 +17,7 @@ class Embedding(nn.Module):
                  max_length=31,
                  pos_embedding_dim=50,
                  norm_lim=3.0,
-                 tune_embedding=False,
+                 tune_embedding=True,
                  device='cpu'):
         super(Embedding, self).__init__()
 
@@ -36,7 +36,7 @@ class Embedding(nn.Module):
         self.word_embedding.weight.requires_grad = tune_embedding
 
         # Position Embedding
-        self.dist_embedding = nn.Embedding(100, pos_embedding_dim, padding_idx=0).to(device)
+        self.dist_embedding = nn.Embedding(2 * (max_length - 1) + 1, pos_embedding_dim, padding_idx=0).to(device)
 
     def create_mask(self, length, max_len=31, dtype=torch.float32):
         """length: B x N x K
@@ -52,6 +52,7 @@ class Embedding(nn.Module):
 
     def forward(self, inputs, concat=True):
         word = inputs['indices'].to(self.device)
+#        print(inputs['dist'])
         dist = inputs['dist'].to(self.device)
 
         mask = self.create_mask(inputs['length']).view(word.shape)  # B x N x (K|Q) x max_len
