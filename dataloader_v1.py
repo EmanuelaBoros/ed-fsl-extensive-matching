@@ -7,6 +7,7 @@ from tqdm import tqdm
 import embeddings as emb
 import os
 import pickle
+from glossary import GLOSSARY
 
 def merge(d1, d2):
     for id, sample in d1.items():
@@ -198,6 +199,25 @@ def load_embeddings(type_embeddings='glove'):
         embeddings_model = emb.fetch_conceptnet_numberbatch()
     return embeddings_model
 
+import spacy
+
+from spacy.tokens import Doc
+
+class WhitespaceTokenizer(object):
+    def __init__(self, vocab):
+        self.vocab = vocab
+
+    def __call__(self, text):
+        words = text.split(' ')
+        # All tokens 'own' a subsequent space character in this tokenizer
+        spaces = [True] * len(words)
+        return Doc(self.vocab, words=words, spaces=spaces)
+    
+nlp = spacy.load("en_core_web_lg")
+nlp.tokenizer = WhitespaceTokenizer(nlp.vocab)
+
+from pprint import pprint
+
 def load_ace_dataset(options):
     #    import utils
     test_type = options.test_type
@@ -210,6 +230,8 @@ def load_ace_dataset(options):
     DISTANCE_MAPPING['<PAD>'] = 0
     for dis in range(minDistance, maxDistance + 1):
         DISTANCE_MAPPING[dis] = len(DISTANCE_MAPPING)
+        
+#    import pdb;pdb.set_trace()
 
     print('test_type', test_type)
 
@@ -222,16 +244,6 @@ def load_ace_dataset(options):
             word_embeds = pickle.load(f)
 #        import pdb;pdb.set_trace()
     else:
-    #    
-    
-    #    word_data = utils.read_pickle('files/{}/word.proc'.format(options.dataset))
-        # utils.read_pickle('files/{}/label2index.proc'.format(options.dataset))
-    
-    #    if options.encoder == 'gcn':
-    #        matrix_data = utils.read_pickle('files/{}/matrix.proc'.format(options.dataset))
-    #        word_data = merge(matrix_data, word_data)
-    
-    #    print(word_data['nw/timex2norm/AFP_ENG_20030327.0022-29'].keys())
     
         sentences = []
         for path in [
@@ -261,6 +273,10 @@ def load_ace_dataset(options):
         word_data = []
         unknown_words = 0
         count = 0
+        
+        import string
+        punctuation = list(string.punctuation)
+        
         for sentence in tqdm(sentences, total=len(sentences)):
             if 'DOCSTART' in sentence:
                 continue
@@ -270,7 +286,16 @@ def load_ace_dataset(options):
                       for x in sentence.split('\n') if len(x.split('\t')) > 1]
             positions = [x.split('\t')[-1].strip().split(',')[0][1:]
                          for x in sentence.split('\n') if len(x.split('\t')) > 1]
-    
+            
+            try:
+                pos_tags = [token.tag_ for token in nlp(' '.join(words).strip())]
+#            import pdb;pdb.set_trace()
+            except:
+                print('Skipping', ' '.join(words))
+                continue
+            
+            assert len(pos_tags) == len(words)
+            
             for i in range(half_window):
                 words.append("<PAD>")
                 words.insert(0, "<PAD>")
@@ -278,24 +303,39 @@ def load_ace_dataset(options):
                 labels.insert(0, "<PAD>")
                 positions.append("<PAD>")
                 positions.insert(0, "<PAD>")
+                pos_tags.append("<PAD>")
+                pos_tags.insert(0, "<PAD>")
     
+        
             for item in zip(sliding_window(words, options.max_length),
                             sliding_window(labels, options.max_length),
-                            sliding_window(positions, options.max_length)):
+                            sliding_window(positions, options.max_length),
+                            sliding_window(pos_tags, options.max_length)):
     
-                window_words, window_labels, window_positions = item
-    
+                window_words, window_labels, window_positions, window_pos_tags = item
+#                print(window_labels)
+                if window_pos_tags[half_window] in GLOSSARY:
+                    if window_labels[half_window] != 'O':
+                        print('Skipping', window_words[half_window], '--', window_pos_tags[half_window])
+                    continue
+                if window_words[half_window] in punctuation:
+                    if window_labels[half_window] != 'O':
+                        print('Skipping', window_words[half_window])
+                    continue
+                
                 entry = {}
                 entry['words'] = window_words
                 entry['label'] = window_labels[half_window]
-#                entry['indices'] = []
+
                 entry['anchor_index'] = half_window
-                entry['length'] = len(
-                    [x for x in window_words if '<PAD>' not in x])
+                entry['length'] = len([x for x in window_words if '<PAD>'  not in x])
+#                    [x for x in window_words if '<PAD>' not in x])
                 entry['mask'] = [1 if x != '<PAD>' else 0 for x in window_words]
                 entry['dist'] = []
     
                 distances = list(range(-half_window, half_window + 1))
+                distances = [len(window_words) - 1 + x for x in distances]
+#                distances = list(range(1, half_window*2 + 2))
     
                 for word_position, item in enumerate(
                         zip(window_words, window_labels, window_positions, distances)):
@@ -304,8 +344,11 @@ def load_ace_dataset(options):
                         all_words.append(word)
                         
 #                    entry['indices'].append(all_words.index(word))
-    
-                    entry['dist'].append(DISTANCE_MAPPING[distance])
+                    if word == '<PAD>':
+                        entry['dist'].append(DISTANCE_MAPPING['<PAD>'])
+                    else:
+#                        entry['dist'].append(DISTANCE_MAPPING[distance])
+                        entry['dist'].append(distance)
     
                 word_data.append(entry)
                 
@@ -316,14 +359,23 @@ def load_ace_dataset(options):
  
         dico, word_to_id, id_to_word = word_mapping(all_words)
         print('Unknown words: ' + str((unknown_words * 100.0) / len(word_to_id)) + '%')
-
-        for idx, window in enumerate(word_data):
+        print('All instances:', len(word_data))
+        
+        count = 0
+        for idx, entry in enumerate(word_data):
+#            import pdb;pdb.set_trace()
             word_data[idx]['indices'] = [word_to_id[word] for word in entry['words']]
+            
             assert len(word_data[idx]['indices']) == len(word_data[idx]['dist'])
-
+            
+            if count < 20:
+                pprint(entry)
+            count += 1
+            
         if 'random' in options.embedding:
-            word_embeds = np.random.uniform(-np.sqrt(0.06),
-                                            np.sqrt(0.06), (len(word_to_id), word_dim))
+#            word_embeds = np.random.uniform(-np.sqrt(0.06),
+#                                            np.sqrt(0.06), (len(word_to_id), word_dim))
+            word_embeds = np.random.normal(0.0, 0.5, (len(word_to_id), word_dim))
             
             with open('data/word_embeds_' + str(options.embedding) + '.pkl', 'wb') as f:
                 pickle.dump(word_embeds, f)
@@ -342,7 +394,8 @@ def load_ace_dataset(options):
                         size_embeddings = embeddings_model.shape[1]
                     except:
                         size_embeddings = embeddings_model.vector_size
-                    word_embeds.append(np.random.uniform(-np.sqrt(0.06), np.sqrt(0.06), size_embeddings))
+#                    word_embeds.append(np.random.uniform(-np.sqrt(0.06), np.sqrt(0.06), size_embeddings))
+                    word_embeds.append(np.random.normal(0.0, 0.5, size_embeddings))
             
             word_embeds = np.array(word_embeds)
             with open('data/word_embeds_' + str(options.embedding) + '.pkl', 'wb') as f:

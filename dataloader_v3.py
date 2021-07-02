@@ -287,15 +287,16 @@ def load_ace_dataset(options):
             
             assert len(words) == options.max_length
             
-            trigger_positions = [x for x in positions if len(x) > 1]
             for idx, trigger_position in enumerate(positions):
                 if trigger_position != '0':
                     positions[idx] = idx
                 else:
                     positions[idx] = -1
 #            entry['mask'] = [1 if x != '<PAD>' else 0 for x in window_words]
-            
-            trigger_positions = [x for x in positions if x != -1]
+#            import pdb;pdb.set_trace()
+#            if len([x for x in positions if x != -1]) == 0:
+#                continue
+
             all_positions = []
             for idx, trigger_position in enumerate(positions):
                 if trigger_position > -1:
@@ -306,11 +307,9 @@ def load_ace_dataset(options):
                     pos_trigger = list(range(-idx, 0)) + list(range(0, len(words) - idx))
                     all_positions.append(pos_trigger)
                     
-#            if len(trigger_positions):
-#                import pdb;pdb.set_trace()
             
-            if len(all_positions) == 0:
-                all_positions.append([-1] * len(words))
+#            if len(all_positions) == 0:
+#                all_positions.append([-1] * len(words))
             
             for positions_ in all_positions:
     
@@ -322,9 +321,6 @@ def load_ace_dataset(options):
 #                if 0 in window_positions:
                 entry['label'] = window_labels[window_positions.index(0)]
                 entry['anchor_index'] = window_positions.index(0)
-#                else:
-#                    entry['label'] = 'O'
-#                    entry['anchor_index'] = -1
                 
                 window_positions = [len(window_words) - 1 + x for x in window_positions] #TODO
                 
@@ -340,20 +336,14 @@ def load_ace_dataset(options):
                 entry['dist'] = window_positions
     
 #                distances = list(range(-half_window, half_window + 1))
-                distances = list(range(1, half_window*2 + 2))
+#                distances = list(range(1, half_window*2 + 2))
     
                 for word_position, item in enumerate(
-                        zip(window_words, window_labels, window_positions, distances)):
-                    word, label, position, distance = item
+                        zip(window_words, window_labels, window_positions)):
+                    word, label, position = item
                     if word not in all_words:
                         all_words.append(word)
                         
-#                    entry['indices'].append(all_words.index(word))
-#                    if word == '<PAD>':
-#                        entry['dist'].append(DISTANCE_MAPPING['<PAD>'])
-#                    else:
-##                        entry['dist'].append(DISTANCE_MAPPING[distance])
-#                        entry['dist'].append(distance)
                 assert len(entry['words']) == options.max_length
                 
                 word_data.append(entry)
@@ -368,13 +358,13 @@ def load_ace_dataset(options):
         dico, word_to_id, id_to_word = word_mapping(all_words)
         print('Unknown words: ' + str((unknown_words * 100.0) / len(word_to_id)) + '%')
 
-        for idx, window in enumerate(word_data):
+        for idx, entry in enumerate(word_data):
             word_data[idx]['indices'] = [word_to_id[word] for word in entry['words']]
             
             assert len(word_data[idx]['indices']) == len(word_data[idx]['dist'])
                 
         if 'random' in options.embedding:
-            word_embeds = np.random.uniform(0.0, 0.5, (len(word_to_id), word_dim))
+            word_embeds = np.random.normal(0.0, 0.5, (len(word_to_id), word_dim))
             
             with open('data/word_embeds_' + str(options.embedding) + '.pkl', 'wb') as f:
                 pickle.dump(word_embeds, f)
@@ -393,7 +383,7 @@ def load_ace_dataset(options):
                         size_embeddings = embeddings_model.shape[1]
                     except:
                         size_embeddings = embeddings_model.vector_size
-                    word_embeds.append(np.random.uniform(0.0, 0.5, size_embeddings))
+                    word_embeds.append(np.random.normal(0.0, 0.5, size_embeddings))
             
             word_embeds = np.array(word_embeds)
             with open('data/word_embeds_' + str(options.embedding) + '.pkl', 'wb') as f:
