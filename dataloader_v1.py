@@ -199,22 +199,22 @@ def load_embeddings(type_embeddings='glove'):
         embeddings_model = emb.fetch_conceptnet_numberbatch()
     return embeddings_model
 
-import spacy
-
-from spacy.tokens import Doc
-
-class WhitespaceTokenizer(object):
-    def __init__(self, vocab):
-        self.vocab = vocab
-
-    def __call__(self, text):
-        words = text.split(' ')
-        # All tokens 'own' a subsequent space character in this tokenizer
-        spaces = [True] * len(words)
-        return Doc(self.vocab, words=words, spaces=spaces)
-    
-nlp = spacy.load("en_core_web_lg")
-nlp.tokenizer = WhitespaceTokenizer(nlp.vocab)
+#import spacy
+#
+#from spacy.tokens import Doc
+#
+#class WhitespaceTokenizer(object):
+#    def __init__(self, vocab):
+#        self.vocab = vocab
+#
+#    def __call__(self, text):
+#        words = text.split(' ')
+#        # All tokens 'own' a subsequent space character in this tokenizer
+#        spaces = [True] * len(words)
+#        return Doc(self.vocab, words=words, spaces=spaces)
+#    
+#nlp = spacy.load("en_core_web_lg")
+#nlp.tokenizer = WhitespaceTokenizer(nlp.vocab)
 
 from pprint import pprint
 
@@ -287,14 +287,14 @@ def load_ace_dataset(options):
             positions = [x.split('\t')[-1].strip().split(',')[0][1:]
                          for x in sentence.split('\n') if len(x.split('\t')) > 1]
             
-            try:
-                pos_tags = [token.tag_ for token in nlp(' '.join(words).strip())]
-#            import pdb;pdb.set_trace()
-            except:
-                print('Skipping', ' '.join(words))
-                continue
+#            try:
+#                pos_tags = [token.tag_ for token in nlp(' '.join(words).strip())]
+##            import pdb;pdb.set_trace()
+#            except:
+#                print('Skipping', ' '.join(words))
+#                continue
             
-            assert len(pos_tags) == len(words)
+#            assert len(pos_tags) == len(words)
             
             for i in range(half_window):
                 words.append("<PAD>")
@@ -303,21 +303,20 @@ def load_ace_dataset(options):
                 labels.insert(0, "<PAD>")
                 positions.append("<PAD>")
                 positions.insert(0, "<PAD>")
-                pos_tags.append("<PAD>")
-                pos_tags.insert(0, "<PAD>")
+#                pos_tags.append("<PAD>")
+#                pos_tags.insert(0, "<PAD>")
     
         
             for item in zip(sliding_window(words, options.max_length),
                             sliding_window(labels, options.max_length),
-                            sliding_window(positions, options.max_length),
-                            sliding_window(pos_tags, options.max_length)):
+                            sliding_window(positions, options.max_length)):
     
-                window_words, window_labels, window_positions, window_pos_tags = item
+                window_words, window_labels, window_positions = item
 #                print(window_labels)
-                if window_pos_tags[half_window] in GLOSSARY:
-                    if window_labels[half_window] != 'O':
-                        print('Skipping', window_words[half_window], '--', window_pos_tags[half_window])
-                    continue
+#                if window_pos_tags[half_window] in GLOSSARY:
+#                    if window_labels[half_window] != 'O':
+#                        print('Skipping', window_words[half_window], '--', window_pos_tags[half_window])
+#                    continue
                 if window_words[half_window] in punctuation:
                     if window_labels[half_window] != 'O':
                         print('Skipping', window_words[half_window])
