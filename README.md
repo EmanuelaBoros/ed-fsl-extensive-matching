@@ -1,5 +1,5 @@
 
-```python train.py --data_path DATA_PATH --train_way 4 --shot 4```
+```python train.py --data_path DATA_PATH --train_way 20 --shot 5 --way 5--query 4 --embedding glove --batch_size 16 --max_length 31 --lr 0.005```
 
 DATA_PATH needs 3 files: train.tsv, test.tsv, dev.tsv
 
