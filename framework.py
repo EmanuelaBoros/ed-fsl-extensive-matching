@@ -222,6 +222,9 @@ class FewShotREFramework:
         if self.args.optimizer == 'adadelta':
             print('Optimizer: Adadelta')
             self.optimizer = optim.Adadelta(self.parameters_to_optimize, self.args.lr)
+        elif self.args.optimizer == 'adam':
+            print('Optimizer: Adam')
+            self.optimizer = optim.Adam(self.parameters_to_optimize, self.args.lr)
         else:
             print('Optimizer: SGD')
             self.optimizer = optim.SGD(self.parameters_to_optimize, self.args.lr, weight_decay=self.args.lr)
@@ -256,6 +259,8 @@ class FewShotREFramework:
                 print('----')
                 print('target', label.shape)
                 print('-' * 80)
+                
+#            import pdb;pdb.set_trace()
             self.model.forward(support, query, negative)
             ce = self.model.loss(label)
             total = 0

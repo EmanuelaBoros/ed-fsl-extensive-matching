@@ -125,4 +125,4 @@ if __name__ == '__main__':
             val_iter=200,
             test_iter=200)
     else:
-        framework.train(train_iter=5050, val_step=1000, test_iter=1000)
+        framework.train(train_iter=5050, val_step=50, test_iter=50)

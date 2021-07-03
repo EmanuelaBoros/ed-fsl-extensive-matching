@@ -120,13 +120,13 @@ class CNN(BaseNet):
         # print('| CNN > convRep', tuple(convRep[0].shape))
 
         pooledRep = [F.max_pool1d(cr, cr.size(2)).squeeze(2) for cr in convRep]  # [(B,Co), ...]*len(Ks)
-        # print('| CNN > pooledRep', tuple(pooledRep[0].shape))
+#        print('| CNN > pooledRep', tuple(pooledRep[0].shape))
 
         frep = self.introduceLocalEmbedding(pooledRep, inputs)
-        # print('| CNN > frep', tuple(frep.shape))
+#        print('| CNN > frep', tuple(frep.shape))
 
         frep = self.fc(self.dropout(frep)).view(B,N,K,-1)
-        # print('| CNN > frep', tuple(frep.shape))
+#        print('| CNN > frep', tuple(frep.shape))
 
         return frep
 
