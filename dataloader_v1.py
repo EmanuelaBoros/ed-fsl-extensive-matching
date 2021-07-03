@@ -331,11 +331,12 @@ def load_ace_dataset(options):
 #                    [x for x in window_words if '<PAD>' not in x])
                 entry['mask'] = [1 if x != '<PAD>' else 0 for x in window_words]
                 entry['dist'] = []
-    
+                
                 distances = list(range(-half_window, half_window + 1))
                 distances = [len(window_words) - 1 + x for x in distances]
 #                distances = list(range(1, half_window*2 + 2))
-    
+#                true_length = len([x for x in window_words if '<PAD>' not in x])
+                
                 for word_position, item in enumerate(
                         zip(window_words, window_labels, window_positions, distances)):
                     word, label, position, distance = item
@@ -348,7 +349,11 @@ def load_ace_dataset(options):
                     else:
 #                        entry['dist'].append(DISTANCE_MAPPING[distance])
                         entry['dist'].append(distance)
-    
+                
+#                import pdb;pdb.set_trace()
+#                length_padding = len(window_words) - len([x for x in window_words if '<PAD>' in x])
+                
+                
                 word_data.append(entry)
                 
                 if count < 5:
@@ -375,6 +380,7 @@ def load_ace_dataset(options):
 #            word_embeds = np.random.uniform(-np.sqrt(0.06),
 #                                            np.sqrt(0.06), (len(word_to_id), word_dim))
             word_embeds = np.random.normal(0.0, 0.5, (len(word_to_id), word_dim))
+            word_embeds[0] = np.zeros(word_dim)
             
             with open('data/word_embeds_' + str(options.embedding) + '.pkl', 'wb') as f:
                 pickle.dump(word_embeds, f)
@@ -394,7 +400,9 @@ def load_ace_dataset(options):
                     except:
                         size_embeddings = embeddings_model.vector_size
 #                    word_embeds.append(np.random.uniform(-np.sqrt(0.06), np.sqrt(0.06), size_embeddings))
-                    word_embeds.append(np.random.normal(0.0, 0.5, size_embeddings))
+#                    word_embeds.append(np.random.normal(0.0, 0.5, size_embeddings))
+                    print('Unk:', word)
+                    word_embeds.append(np.zeros(size_embeddings))
             
             word_embeds = np.array(word_embeds)
             with open('data/word_embeds_' + str(options.embedding) + '.pkl', 'wb') as f:
