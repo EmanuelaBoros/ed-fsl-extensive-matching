@@ -1,5 +1,5 @@
 from argument_parser import proto_parser
-from dataloader_v3 import load_ace_dataset, fewshot_negative_fn, GCN_FEATURES, DEFAULT_FEATURES, Fewshot
+from dataloader_v2 import load_ace_dataset, fewshot_negative_fn, GCN_FEATURES, DEFAULT_FEATURES, Fewshot
 from framework import FewShotREFramework
 from models.proto import ProtoHATT, Proto
 from models.matching import Matching
