@@ -43,7 +43,8 @@ class BaseNet(nn.Module):
 
         self.embedder = Embedding(args.vectors,
                                   tune_embedding=args.tune_embedding,
-                                  device=args.device)
+                                  device=args.device,
+                                  max_length=args.max_length)
         self.window = args.window
         self.embedding_input_dim = self.embedder.size
         self.conv = nn.Conv1d(self.embedding_input_dim, self.hidden_size, 3, padding=1)

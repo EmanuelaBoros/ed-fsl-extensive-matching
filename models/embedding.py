@@ -23,7 +23,7 @@ class Embedding(nn.Module):
 
         self.device = device
         self.norm_lim = norm_lim
-        print('| Embedding > device', device, '; Tune embedding: ', tune_embedding)
+        print('| Embedding > device', device, '; Tune embedding: ', tune_embedding, 'max_length:', max_length)
         self.max_length = max_length
         self.word_embedding_dim = word_vec_mat.shape[1]
         self.pos_embedding_dim = pos_embedding_dim
@@ -38,14 +38,14 @@ class Embedding(nn.Module):
         # Position Embedding
         self.dist_embedding = nn.Embedding(2 * (max_length - 1) + 1, pos_embedding_dim, padding_idx=0).to(device)
 
-    def create_mask(self, length, max_len=31, dtype=torch.float32):
+    def create_mask(self, length, dtype=torch.float32):
         """length: B x N x K
             return B x N x K x max_len.
             If max_len is None, then max of length will be used.
             """
         length = length.view(-1)
-        mask = torch.arange(max_len, device=length.device,
-                            dtype=length.dtype).expand(len(length), max_len) < length.unsqueeze(1)
+        mask = torch.arange(self.max_length, device=length.device,
+                            dtype=length.dtype).expand(len(length), self.max_length) < length.unsqueeze(1)
         if dtype is not None:
             mask = torch.as_tensor(mask, dtype=dtype, device=length.device)
         return mask.to(self.device)

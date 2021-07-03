@@ -77,7 +77,6 @@ class Proto(framework.FewShotREModel):
         Q: Num of instances for each class in the query set
         '''
         # print('N/K/Q: ', N, K, Q)
-
         self.support = self.sentence_encoder(support)  # (B, Ns, K, D), where D is the hidden size
         # print("Proto > support", tuple(self.support.shape))
         self.query = self.sentence_encoder(query)  # (B, Nq, K, D)
