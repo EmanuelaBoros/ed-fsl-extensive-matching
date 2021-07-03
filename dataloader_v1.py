@@ -380,7 +380,8 @@ def load_ace_dataset(options):
 #            word_embeds = np.random.uniform(-np.sqrt(0.06),
 #                                            np.sqrt(0.06), (len(word_to_id), word_dim))
             word_embeds = np.random.normal(0.0, 0.5, (len(word_to_id), word_dim))
-            word_embeds[0] = np.zeros(word_dim)
+            word_embeds[0] = np.zeros(word_dim) #<PAD>
+            word_embeds[1] = np.zeros(word_dim) #<UNK>
             
             with open('data/word_embeds_' + str(options.embedding) + '.pkl', 'wb') as f:
                 pickle.dump(word_embeds, f)
