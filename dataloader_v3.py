@@ -365,7 +365,9 @@ def load_ace_dataset(options):
                 
         if 'random' in options.embedding:
             word_embeds = np.random.normal(0.0, 0.5, (len(word_to_id), word_dim))
-            
+            word_embeds[0] = np.zeros(word_dim) #<PAD>
+            word_embeds[1] = np.zeros(word_dim) #<UNK>
+          
             with open('data/word_embeds_' + str(options.embedding) + '.pkl', 'wb') as f:
                 pickle.dump(word_embeds, f)
 
@@ -383,8 +385,10 @@ def load_ace_dataset(options):
                         size_embeddings = embeddings_model.shape[1]
                     except:
                         size_embeddings = embeddings_model.vector_size
-                    word_embeds.append(np.random.normal(0.0, 0.5, size_embeddings))
-            
+#                    word_embeds.append(np.random.normal(0.0, 0.5, size_embeddings))
+                    print('Unk:', word)
+                    word_embeds.append(np.zeros(size_embeddings))
+
             word_embeds = np.array(word_embeds)
             with open('data/word_embeds_' + str(options.embedding) + '.pkl', 'wb') as f:
                 pickle.dump(word_embeds, f)

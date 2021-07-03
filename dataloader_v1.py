@@ -542,11 +542,12 @@ class Fewshot(object):
             K=5,
             Q=4,
             O=0,
-            noise=0.0):
+            noise=0.0,
+            max_length=31):
         self.features = features
         self.positive_length = len(positive_data)
         self.negative_length = len(negative_data)
-        self.max_length = 31
+        self.max_length = max_length
         self.positive_data = positive_data
         self.negative_data = negative_data
         self.noise = noise
