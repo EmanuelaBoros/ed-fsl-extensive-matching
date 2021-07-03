@@ -292,10 +292,6 @@ def load_ace_dataset(options):
                     positions[idx] = idx
                 else:
                     positions[idx] = -1
-#            entry['mask'] = [1 if x != '<PAD>' else 0 for x in window_words]
-#            import pdb;pdb.set_trace()
-#            if len([x for x in positions if x != -1]) == 0:
-#                continue
 
             all_positions = []
             for idx, trigger_position in enumerate(positions):
@@ -307,10 +303,6 @@ def load_ace_dataset(options):
                     pos_trigger = list(range(-idx, 0)) + list(range(0, len(words) - idx))
                     all_positions.append(pos_trigger)
                     
-            
-#            if len(all_positions) == 0:
-#                all_positions.append([-1] * len(words))
-            
             for positions_ in all_positions:
     
                 window_words, window_labels, window_positions = words, labels, positions_
@@ -318,11 +310,10 @@ def load_ace_dataset(options):
                 entry = {}
                 entry['words'] = window_words
 
-#                if 0 in window_positions:
                 entry['label'] = window_labels[window_positions.index(0)]
                 entry['anchor_index'] = window_positions.index(0)
                 
-                window_positions = [len(window_words) - 1 + x for x in window_positions] #TODO
+                window_positions = [len(window_words) - 1 + x for x in window_positions] 
                 
                 if max(window_positions) > MAX_DIST:
                     MAX_DIST = max(window_positions)
@@ -331,12 +322,8 @@ def load_ace_dataset(options):
                     
                     
                 entry['length'] = len(window_words)
-#                    [x for x in window_words if '<PAD>' not in x])
                 entry['mask'] = [1 if x != '<PAD>' else 0 for x in window_words]
                 entry['dist'] = window_positions
-    
-#                distances = list(range(-half_window, half_window + 1))
-#                distances = list(range(1, half_window*2 + 2))
     
                 for word_position, item in enumerate(
                         zip(window_words, window_labels, window_positions)):
@@ -352,7 +339,6 @@ def load_ace_dataset(options):
                     print(entry)
                 count += 1
 
-#        import pdb;pdb.set_trace()
         print('MAX_DIST', MAX_DIST)
         print('MIN_DIST', MIN_DIST)
         dico, word_to_id, id_to_word = word_mapping(all_words)
@@ -396,16 +382,9 @@ def load_ace_dataset(options):
         with open('data/word_data_' + str(options.embedding) + '.pkl', 'wb') as f:
             pickle.dump(word_data, f)
 
-#    data = [x for idx, x in word_data.items() if x['label'] != 'O']
-#    other = [x for idx, x in word_data.items() if x['label'] == 'O']
-
     data = [x for x in word_data if x['label'] != 'O']
     other = [x for x in word_data if x['label'] == 'O']
 
-#    import pdb;pdb.set_trace()
-#    # Filter test from train:
-#    train = [x for x in data if not x['label'].startswith(test_type)]
-#    rest = [x for x in data if x['label'].startswith(test_type)]
     def check_test_type(test_types, label):
         #        import pdb;pdb.set_trace()
         for _type in test_types:
@@ -427,7 +406,7 @@ def load_ace_dataset(options):
             for x in range(30 // (len(samples))):
                 train += samples
 
-# ----------------------
+    # ----------------------
     counter = collections.Counter()
     counter.update([x['label'] for x in train])
     accepted_target_classes = [k for k, v in counter.items() if v > 20]
@@ -436,7 +415,7 @@ def load_ace_dataset(options):
         'Accepted target classes with more than 20 examples for train:',
         accepted_target_classes)
     print(counter, '\n')
-# ----------------------
+    # ----------------------
 
     # For dev and test
     counter = collections.Counter()
@@ -454,7 +433,7 @@ def load_ace_dataset(options):
         valid += samples[:len(samples) // 2]
         test += samples[len(samples) // 2:]
 
-# ----------------------
+    # ----------------------
     for examples in [('valid', valid), ('test', test)]:
         per_counter = collections.Counter()
         per_counter.update([x['label'] for x in examples[1]])
@@ -463,7 +442,7 @@ def load_ace_dataset(options):
         print('Accepted target classes with more than 20 examples for:',
               examples[0], per_accepted_target_classes)
         print(per_counter, '\n')
-# ----------------------
+        # ----------------------
 
     # For other
     l = len(other) // 3
@@ -527,11 +506,12 @@ class Fewshot(object):
             K=5,
             Q=4,
             O=0,
-            noise=0.0):
+            noise=0.0,
+            max_length=31):
         self.features = features
         self.positive_length = len(positive_data)
         self.negative_length = len(negative_data)
-        self.max_length = 31
+        self.max_length = max_length
         self.positive_data = positive_data
         self.negative_data = negative_data
         self.noise = noise
@@ -598,10 +578,10 @@ class Fewshot(object):
 #        print('N samples:', self.N, 'from', len(self.positive_class))
 
         target_classes = random.sample(self.positive_class, N)
-        noise_classes = []
-        for class_name in self.event2indices.keys():
-            if not (class_name in target_classes):
-                noise_classes.append(class_name)
+#        noise_classes = []
+#        for class_name in self.event2indices.keys():
+#            if not (class_name in target_classes):
+#                noise_classes.append(class_name)
 
         support_set = []
         query_set = []

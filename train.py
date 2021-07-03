@@ -1,5 +1,5 @@
 from argument_parser import proto_parser
-from dataloader_v1 import load_ace_dataset, fewshot_negative_fn, GCN_FEATURES, DEFAULT_FEATURES, Fewshot
+from dataloader_v3 import load_ace_dataset, fewshot_negative_fn, GCN_FEATURES, DEFAULT_FEATURES, Fewshot
 from framework import FewShotREFramework
 from models.proto import ProtoHATT, Proto
 from models.matching import Matching
@@ -66,7 +66,8 @@ if __name__ == '__main__':
         K,
         Q,
         O,
-        noise=args.noise)
+        noise=args.noise,
+        max_length=args.max_length)
     val_dataset = Fewshot(
         valid_rev,
         valid_other,
@@ -75,7 +76,8 @@ if __name__ == '__main__':
         K,
         Q,
         O,
-        noise=args.noise)
+        noise=args.noise,
+        max_length=args.max_length)
     test_dataset = Fewshot(
         test_rev,
         test_other,
@@ -84,7 +86,8 @@ if __name__ == '__main__':
         K,
         Q,
         O,
-        noise=args.noise)
+        noise=args.noise,
+        max_length=args.max_length)
 
     args.vectors = vectors #utils.read_pickle('files/{}/W.proc'.format(args.dataset))
     
@@ -125,4 +128,4 @@ if __name__ == '__main__':
             val_iter=200,
             test_iter=200)
     else:
-        framework.train(train_iter=5050, val_step=50, test_iter=50)
+        framework.train(train_iter=5050, val_step=200, test_iter=200)
