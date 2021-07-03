@@ -198,21 +198,28 @@ def load_embeddings(type_embeddings='glove'):
         embeddings_model = emb.fetch_conceptnet_numberbatch()
     return embeddings_model
 
+import spacy
+
+from spacy.tokens import Doc
+
+class WhitespaceTokenizer(object):
+    def __init__(self, vocab):
+        self.vocab = vocab
+
+    def __call__(self, text):
+        words = text.split(' ')
+        # All tokens 'own' a subsequent space character in this tokenizer
+        spaces = [True] * len(words)
+        return Doc(self.vocab, words=words, spaces=spaces)
+    
+nlp = spacy.load("en_core_web_lg")
+nlp.tokenizer = WhitespaceTokenizer(nlp.vocab)
+
+import string
+punctuation = list(string.punctuation)
+
 def load_ace_dataset(options):
-    #    import utils
     test_type = options.test_type
-
-    half_window = int(options.max_length / 2)
-    DISTANCE_MAPPING = {}
-    minDistance = -half_window
-    maxDistance = half_window
-
-    DISTANCE_MAPPING['<PAD>'] = 0
-    for dis in range(minDistance, maxDistance + 1):
-        DISTANCE_MAPPING[dis] = len(DISTANCE_MAPPING)
-        
-#    import pdb;pdb.set_trace()
-
     print('test_type', test_type)
 
     label2index = get_labels()
@@ -222,18 +229,7 @@ def load_ace_dataset(options):
             word_data = pickle.load(f)
         with open('data/word_embeds_' + str(options.embedding) + '.pkl', 'rb') as f:
             word_embeds = pickle.load(f)
-#        import pdb;pdb.set_trace()
     else:
-    #    
-    
-    #    word_data = utils.read_pickle('files/{}/word.proc'.format(options.dataset))
-        # utils.read_pickle('files/{}/label2index.proc'.format(options.dataset))
-    
-    #    if options.encoder == 'gcn':
-    #        matrix_data = utils.read_pickle('files/{}/matrix.proc'.format(options.dataset))
-    #        word_data = merge(matrix_data, word_data)
-    
-    #    print(word_data['nw/timex2norm/AFP_ENG_20030327.0022-29'].keys())
     
         sentences = []
         for path in [
@@ -274,7 +270,7 @@ def load_ace_dataset(options):
                       for x in sentence.split('\n') if len(x.split('\t')) > 1]
             positions = [x.split('\t')[-1].strip().split(',')[0][1:]
                          for x in sentence.split('\n') if len(x.split('\t')) > 1]
-            
+                
             if len(words) < options.max_length:
                 for i in range(len(words), options.max_length):
                     words.append("<PAD>")
@@ -293,10 +289,12 @@ def load_ace_dataset(options):
                 else:
                     positions[idx] = -1
 
+            # Generating all the relative distances for all the instances positive + negative
             all_positions = []
             for idx, trigger_position in enumerate(positions):
                 if trigger_position > -1:
-                    pos_trigger = list(range(-trigger_position, 0)) + list(range(0, len(words) - trigger_position))
+                    pos_trigger = list(range(-trigger_position, 0)) + \
+                        list(range(0, len(words) - trigger_position))
                     all_positions.append(pos_trigger)
                 else:
                     
@@ -306,6 +304,11 @@ def load_ace_dataset(options):
             for positions_ in all_positions:
     
                 window_words, window_labels, window_positions = words, labels, positions_
+
+                if window_words[window_positions.index(0)] in punctuation:
+#                    print('Skipping', window_words[window_positions.index(0)])
+                    continue
+    
     
                 entry = {}
                 entry['words'] = window_words
@@ -313,6 +316,7 @@ def load_ace_dataset(options):
                 entry['label'] = window_labels[window_positions.index(0)]
                 entry['anchor_index'] = window_positions.index(0)
                 
+                # Relative distances can only be positive numbers
                 window_positions = [len(window_words) - 1 + x for x in window_positions] 
                 
                 if max(window_positions) > MAX_DIST:
@@ -320,17 +324,20 @@ def load_ace_dataset(options):
                 if min(window_positions) > MIN_DIST:
                     MIN_DIST = min(window_positions)
                     
-                    
                 entry['length'] = len(window_words)
                 entry['mask'] = [1 if x != '<PAD>' else 0 for x in window_words]
-                entry['dist'] = window_positions
+                entry['dist'] = []
     
                 for word_position, item in enumerate(
                         zip(window_words, window_labels, window_positions)):
-                    word, label, position = item
+                    word, label, distance = item
                     if word not in all_words:
                         all_words.append(word)
-                        
+                    if word == '<PAD>':
+                        entry['dist'].append(0)
+                    else:
+                        entry['dist'].append(distance)
+
                 assert len(entry['words']) == options.max_length
                 
                 word_data.append(entry)
@@ -342,7 +349,6 @@ def load_ace_dataset(options):
         print('MAX_DIST', MAX_DIST)
         print('MIN_DIST', MIN_DIST)
         dico, word_to_id, id_to_word = word_mapping(all_words)
-        print('Unknown words: ' + str((unknown_words * 100.0) / len(word_to_id)) + '%')
 
         for idx, entry in enumerate(word_data):
             word_data[idx]['indices'] = [word_to_id[word] for word in entry['words']]
@@ -372,12 +378,15 @@ def load_ace_dataset(options):
                     except:
                         size_embeddings = embeddings_model.vector_size
 #                    word_embeds.append(np.random.normal(0.0, 0.5, size_embeddings))
-                    print('Unk:', word)
+#                    print('Unk:', word)
+                    unknown_words += 1
                     word_embeds.append(np.zeros(size_embeddings))
 
             word_embeds = np.array(word_embeds)
             with open('data/word_embeds_' + str(options.embedding) + '.pkl', 'wb') as f:
                 pickle.dump(word_embeds, f)
+
+        print('Unknown words: ' + str((unknown_words * 100.0) / len(word_to_id)) + '%')
 
         with open('data/word_data_' + str(options.embedding) + '.pkl', 'wb') as f:
             pickle.dump(word_data, f)

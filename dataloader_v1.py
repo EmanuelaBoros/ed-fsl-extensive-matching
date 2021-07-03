@@ -362,7 +362,6 @@ def load_ace_dataset(options):
 
  
         dico, word_to_id, id_to_word = word_mapping(all_words)
-        print('Unknown words: ' + str((unknown_words * 100.0) / len(word_to_id)) + '%')
         print('All instances:', len(word_data))
         
         count = 0
@@ -402,12 +401,15 @@ def load_ace_dataset(options):
                         size_embeddings = embeddings_model.vector_size
 #                    word_embeds.append(np.random.uniform(-np.sqrt(0.06), np.sqrt(0.06), size_embeddings))
 #                    word_embeds.append(np.random.normal(0.0, 0.5, size_embeddings))
-                    print('Unk:', word)
+#                    print('Unk:', word)
+                    unknown_words += 1
                     word_embeds.append(np.zeros(size_embeddings))
             
             word_embeds = np.array(word_embeds)
             with open('data/word_embeds_' + str(options.embedding) + '.pkl', 'wb') as f:
                 pickle.dump(word_embeds, f)
+
+        print('Unknown words: ' + str((unknown_words * 100.0) / len(word_to_id)) + '%')
 
         with open('data/word_data_' + str(options.embedding) + '.pkl', 'wb') as f:
             pickle.dump(word_data, f)

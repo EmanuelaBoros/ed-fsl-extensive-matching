@@ -42,7 +42,7 @@ def proto_parser():
     parser.add_argument('-b', '--batch_size', default=4, type=int)
     parser.add_argument('--optimizer', default='sgd', type=str, choices=['adam', 'sgd', 'adadelta'])
     parser.add_argument('--data_path', type=str)
-    parser.add_argument('--lr', default=0.003, type=float)
+    parser.add_argument('--lr', default=0.005, type=float)
     parser.add_argument('--lr_step_size', default=500, type=int)
     parser.add_argument('--gpu', default='0')
     # Few-shot settings
