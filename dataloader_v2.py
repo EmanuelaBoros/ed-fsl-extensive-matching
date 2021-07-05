@@ -198,22 +198,23 @@ def load_embeddings(type_embeddings='glove'):
         embeddings_model = emb.fetch_conceptnet_numberbatch()
     return embeddings_model
 
-import spacy
-
-from spacy.tokens import Doc
-
-class WhitespaceTokenizer(object):
-    def __init__(self, vocab):
-        self.vocab = vocab
-
-    def __call__(self, text):
-        words = text.split(' ')
-        # All tokens 'own' a subsequent space character in this tokenizer
-        spaces = [True] * len(words)
-        return Doc(self.vocab, words=words, spaces=spaces)
-    
-nlp = spacy.load("en_core_web_lg")
-nlp.tokenizer = WhitespaceTokenizer(nlp.vocab)
+#TODO: in case other candidates should be removed
+#import spacy
+#
+#from spacy.tokens import Doc
+#
+#class WhitespaceTokenizer(object):
+#    def __init__(self, vocab):
+#        self.vocab = vocab
+#
+#    def __call__(self, text):
+#        words = text.split(' ')
+#        # All tokens 'own' a subsequent space character in this tokenizer
+#        spaces = [True] * len(words)
+#        return Doc(self.vocab, words=words, spaces=spaces)
+#    
+#nlp = spacy.load("en_core_web_lg")
+#nlp.tokenizer = WhitespaceTokenizer(nlp.vocab)
 
 import string
 punctuation = list(string.punctuation)
@@ -243,7 +244,7 @@ def load_ace_dataset(options):
                 sentences += set_sentences  # TODO: they say in the paper that they concat all data
     
         word_dim = 300
-        # TODO: for now, just random embeddings
+        # TODO: For the random embeddings
             
         def get_event_type(label):  # transform the event subtypes labels into event types
             if len(label) == 1:
@@ -299,14 +300,13 @@ def load_ace_dataset(options):
                 if trigger_position > -1:
                     pos_trigger = list(range(-trigger_position, 0)) + \
                         list(range(0, len(words) - trigger_position))
-#                    for i in range(len([x for x in words if '<PAD>' not in x])):
                     all_positions.append(pos_trigger)
                 else:
                     
                     pos_trigger = list(range(-idx, 0)) + list(range(0, len(words) - idx))
                     all_positions.append(pos_trigger)
             
-#            assert len(all_positions) == len(words) # Generate positions vectors for all the words in the sentence
+            assert len(all_positions) == len(words) # Generate positions vectors for all the words in the sentence
             
             for positions_ in all_positions:
     
