@@ -278,6 +278,7 @@ def load_ace_dataset(options):
                     positions.append('0')
             else:
                 if len([x for x in labels if x != 'O']):
+                    print('You are missing out these labels:')
                     print(labels)
                 words = words[:options.max_length]
                 labels = labels[:options.max_length]
