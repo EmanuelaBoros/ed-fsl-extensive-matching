@@ -260,7 +260,7 @@ def load_ace_dataset(options):
         unknown_words = 0
         count = 0
         MAX_DIST = 0
-        MIN_DIST = 0
+        MIN_DIST = 10000
         for sentence in tqdm(sentences, total=len(sentences)):
             if 'DOCSTART' in sentence:
                 continue
@@ -270,7 +270,7 @@ def load_ace_dataset(options):
                       for x in sentence.split('\n') if len(x.split('\t')) > 1]
             positions = [x.split('\t')[-1].strip().split(',')[0][1:]
                          for x in sentence.split('\n') if len(x.split('\t')) > 1]
-                
+
             if len(words) < options.max_length:
                 for i in range(len(words), options.max_length):
                     words.append("<PAD>")
@@ -298,33 +298,34 @@ def load_ace_dataset(options):
                 if trigger_position > -1:
                     pos_trigger = list(range(-trigger_position, 0)) + \
                         list(range(0, len(words) - trigger_position))
+#                    for i in range(len([x for x in words if '<PAD>' not in x])):
                     all_positions.append(pos_trigger)
                 else:
                     
                     pos_trigger = list(range(-idx, 0)) + list(range(0, len(words) - idx))
                     all_positions.append(pos_trigger)
-                    
+            
+#            assert len(all_positions) == len(words) # Generate positions vectors for all the words in the sentence
+            
             for positions_ in all_positions:
     
                 window_words, window_labels, window_positions = words, labels, positions_
-
+                
                 if window_words[window_positions.index(0)] in punctuation:
 #                    print('Skipping', window_words[window_positions.index(0)])
                     continue
-    
-    
+                if window_words[window_positions.index(0)] == "<PAD>":
+                    continue
+                
                 entry = {}
                 entry['words'] = window_words
 
                 entry['label'] = window_labels[window_positions.index(0)]
                 entry['anchor_index'] = window_positions.index(0)
-                
-                # Relative distances can only be positive numbers
-                window_positions = [len(window_words) - 1 + x for x in window_positions] 
-                
+                                
                 if max(window_positions) > MAX_DIST:
                     MAX_DIST = max(window_positions)
-                if min(window_positions) > MIN_DIST:
+                if min(window_positions) < MIN_DIST:
                     MIN_DIST = min(window_positions)
                     
                 entry['length'] = len(window_words)
@@ -342,11 +343,18 @@ def load_ace_dataset(options):
                         entry['dist'].append(distance)
 
                 assert len(entry['words']) == options.max_length
+
+                # Relative distances can only be positive numbers
+                entry['dist'] = [options.max_length - 1 + x for x in window_positions] 
                 
                 word_data.append(entry)
                 
-                if count < 5:
-                    print(entry)
+                if count < 20:
+                    print('Trigger: {}; Label: {}'.format(window_words[window_positions.index(0)], entry['label']))
+                    print([word for word in entry['words'] if word != "<PAD>"])
+                    print([distance for idx_distance, distance in enumerate(window_positions) if entry['words'][idx_distance] != "<PAD>"])
+#                    print(entry['dist'])
+                    print('*'*20)
                 count += 1
 
         print('MAX_DIST', MAX_DIST)
@@ -370,7 +378,8 @@ def load_ace_dataset(options):
             embeddings_model = load_embeddings(options.embedding)
 
             word_embeds = []
-            for word, _ in word_to_id.items():
+            print('Embedding encoding:')
+            for word, _ in tqdm(word_to_id.items(), total=len(word_to_id.items())):
                 if word in embeddings_model:
                     word_embeds.append(embeddings_model[word])
                 elif word.lower() in embeddings_model:
@@ -444,8 +453,16 @@ def load_ace_dataset(options):
         samples = [x for x in rest if x['label'] == t]
         valid += samples[:len(samples) // 2]
         test += samples[len(samples) // 2:]
-
+    
+#    print('Test length:', len(test))
+#    new_test = []
+#    for i in test:
+#       if i not in new_test:
+#          new_test.append(i)
+#    test = new_test
+#    print('Test length:', len(test))
     # ----------------------
+    
     for examples in [('valid', valid), ('test', test)]:
         per_counter = collections.Counter()
         per_counter.update([x['label'] for x in examples[1]])

@@ -317,11 +317,11 @@ def load_ace_dataset(options):
 #                    if window_labels[half_window] != 'O':
 #                        print('Skipping', window_words[half_window], '--', window_pos_tags[half_window])
 #                    continue
-                if window_words[half_window] in punctuation:
-                    if window_labels[half_window] != 'O':
-                        print('Skipping', window_words[half_window])
-                    continue
-                
+#                if window_words[half_window] in punctuation:
+#                    if window_labels[half_window] != 'O':
+#                        print('Skipping', window_words[half_window])
+#                    continue
+#                
                 entry = {}
                 entry['words'] = window_words
                 entry['label'] = window_labels[half_window]
